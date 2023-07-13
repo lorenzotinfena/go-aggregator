@@ -1,0 +1,36 @@
+I want you to make a vscode extension in typescript with command called "Aggregate" which trigger a function which create or overwrite a file called "output.go" in the opened folder.
+There is a file in the opened folder called "./main.go" with a valid golang main.go. Its only dependecies are packages from a single golang module called "modulino"which I can modify.
+Note that all the dependencies of modulino are from the standard library ot modulino itself.
+You have to generate a string which is the original main.go modified with all the dependencies source codes in the same file, so the only external dependencies are from the standard library.
+Basically it start with the input file main.go without the import blocks.
+Note that every import is treated without its alias.
+
+Note that with clean a file I mean iterate through all imports with their aliases
+and for each, if the import is from a non standard library, then remove
+its alias from the code in every call to that alias with the dot (for example if you have "import (modu "github.com/example/modulino" )" then every string like "modu.x" should be changes with only x),
+like is the code in the package imported is in the same package as caller code.
+
+There is a map called "importsAnalyzed" which stores all the imports analyzed.
+There is a queue called "importToAnalyze" that is initialized with all imports from main.go.
+There is a string called "finalCode" which initially store the code from main.go cleaned without package header and import blocks.
+
+The script is in a loop until there are elements in importToAnalyze.
+For each import (with alias) from importToAnalyze:
+- if is in importsAnalyzed: continue
+- else {
+add it to importsAnalyzed.
+if it is from a non standard library
+get the list of files from that package (if the package is github.com/a/b/c then the root package path is /github.com/a/b/c and so on other paths), and for each file:
+Append to finalCode the code cleaned without package header and import blocks, and add all its imports to importToAnalyze.
+}
+
+In the end, append on top of finalCode the a comment with all the original main.go file. And then the package header called "package main" and the list of imports from importsAnalyzed.
+
+It assumed that all types/functions/interfaces of every file in modulino and in main.go have different names.
+You can assueme that an import is not from a standard library if it start with "github.com"
+
+If you need some assumptions on the main.go or on the modulino tell them, but try to do that with the least amount of assumption.
+
+Implement all necessary functions.
+
+Place all the main code in a unique function called "aggregate" that has to be called from scode.commands.registerCommand callback
