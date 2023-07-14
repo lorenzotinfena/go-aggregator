@@ -11,6 +11,12 @@ module.exports = require("vscode");
 /* 2 */
 /***/ ((module) => {
 
+module.exports = require("path");
+
+/***/ }),
+/* 3 */
+/***/ ((module) => {
+
 module.exports = require("fs");
 
 /***/ })
@@ -49,91 +55,131 @@ var exports = __webpack_exports__;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.activate = void 0;
 const vscode = __webpack_require__(1);
-const fs = __webpack_require__(2);
-const importsAnalyzed = new Set();
-const importToAnalyze = [];
+const path = __webpack_require__(2);
+const fs = __webpack_require__(3);
+const importsAnalyzed = new Set(); // contains only non std libraries
+const importToAnalyze = []; // contains only non std libraries
+let finalImports = new Set();
 let finalCode = '';
-async function processImports() {
-    while (importToAnalyze.length > 0) {
-        const importStatement = importToAnalyze.shift();
-        if (!importStatement || importsAnalyzed.has(importStatement)) {
-            continue;
+function getPackagesAndAlias(importBlock) {
+    // Regex pattern to parse individual imports
+    const importLinePattern = /(?:[^"'\r\n]+)?["'][^"']*["']/g;
+    // Lists to store aliases and packages
+    const aliases = [];
+    const packages = [];
+    let match;
+    while ((match = importLinePattern.exec(importBlock))) {
+        var importLine = match[0].replace(/"/g, ' ').trim().replace(/\s+/g, " ");
+        var existAlias = true;
+        if (importLine.charAt(0) === '.' || importLine.charAt(0) === '_') {
+            importLine = importLine.substring(1);
+            existAlias = false;
         }
-        importsAnalyzed.add(importStatement);
-        if (importStatement.startsWith('github.com')) {
-            const packageName = importStatement.substring(0, importStatement.lastIndexOf('/'));
-            const packageFiles = getPackageFiles(packageName);
-            for (const file of packageFiles) {
-                const fileCode = fs.readFileSync(file, 'utf-8');
-                const cleanedCode = cleanCode(fileCode);
-                analyzeImports(cleanedCode);
-                finalCode += cleanedCode;
+        importLine = importLine.trim();
+        var splitted = importLine.split(' ');
+        var pack = splitted[splitted.length - 1];
+        packages.push(pack);
+        if (existAlias) {
+            var tmp = splitted[0].split('/');
+            var alias = tmp[tmp.length - 1];
+            aliases.push(alias);
+        }
+        else {
+            aliases.push(importLine.charAt(0));
+        }
+    }
+    return { aliases, packages };
+}
+function cleanAlias(aliases, code) {
+    for (let i = 0; i < aliases.length; i++) {
+        if (aliases[i][0] !== '.' && aliases[i][0] !== '_') {
+            const searchString = aliases[i] + '.';
+            while (code.includes(searchString)) {
+                code = code.replace(code, searchString);
             }
         }
     }
+    return code;
 }
-function getPackageFiles(packageName) {
-    // Implement this function to return the list of files in the given package name
-    // You can use the file system APIs or any other method to retrieve the list of files
-    // and return them as an array of file paths.
-    return [];
-}
-function analyzeImports(code) {
-    const regex = /import \(([\s\S]*?)\)/g;
-    let match;
-    while ((match = regex.exec(code)) !== null) {
-        const imports = match[1].split('\n').filter((imp) => imp.trim().length > 0);
-        for (const imp of imports) {
-            const importStatement = imp.split(' ')[0].replace(/[()\s"]/g, '');
-            importToAnalyze.push(importStatement);
+function processFile(filePath) {
+    // read filePath and remove comments
+    const fileContent = fs.readFileSync(filePath, 'utf-8').replace(/\/\/.*?\n/g, '').replace(/\/\*.*?\*\//gs, '');
+    const lines = fileContent.split('\n');
+    let packageHeader = '';
+    let importBlock = '';
+    let code = '';
+    // Extract package header, import block, and code
+    let isInImportBlock = false;
+    for (const line of lines) {
+        if (line.startsWith('package')) {
+            packageHeader = line;
+        }
+        else if (line.startsWith('import')) {
+            isInImportBlock = true;
+            importBlock += line + '\n';
+        }
+        else if (isInImportBlock) {
+            if (line.trim() === ')') {
+                isInImportBlock = false;
+            }
+            importBlock += line + '\n';
+        }
+        else {
+            code += line + '\n';
+        }
+    }
+    var result = getPackagesAndAlias(importBlock);
+    // Clean the code by removing aliases
+    const cleanedCode = cleanAlias(result.aliases, code);
+    // Append the cleaned code to finalCode
+    finalCode += cleanedCode;
+    // Analyze the imports
+    for (let i = 0; i < result.packages.length; i++) {
+        const pkg = result.packages[i];
+        if (pkg.split('/')[0] == 'github.com') {
+            if (!importsAnalyzed.has(pkg)) {
+                importsAnalyzed.add(pkg);
+                importToAnalyze.push(pkg);
+            }
+        }
+        else {
+            finalImports.add(result.aliases[i] + " \"" + pkg + '"');
         }
     }
 }
-function cleanCode(code) {
-    // Clean non-standard library imports
-    const nonStdLibImports = Array.from(importsAnalyzed).filter((imp) => imp.startsWith('github.com'));
-    for (const imp of nonStdLibImports) {
-        const importAlias = imp.split(' ')[1].replace(/[()\s"]/g, '');
-        const importPackage = imp.split(' ')[0].replace(/[()\s"]/g, '');
-        const regex = new RegExp(`${importAlias}\\.(\\w+)`, 'g');
-        code = code.replace(regex, '$1');
-    }
-    // Remove package header and import blocks from code
-    // Replace the aliases with the dot (.) in every occurrence in the code
-    // Remove package header
-    code = code.replace(/^package\s+\w+\s*/, '');
-    // Remove import blocks
-    code = code.replace(/^import\s+\(([\s\S]*?)\)/gm, '');
-    return code;
-}
-async function aggregate() {
-    const activeEditor = vscode.window.activeTextEditor;
-    if (activeEditor) {
-        const fileName = activeEditor.document.fileName;
-        const folderPath = fileName.substring(0, fileName.lastIndexOf('/'));
-        const mainCode = fs.readFileSync(fileName, 'utf-8');
+function aggregate() {
+    const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+    if (workspaceFolder) {
+        const rootPath = workspaceFolder.uri.fsPath;
+        const mainGoPath = path.join(rootPath, 'main.go');
+        const outputPath = path.join(rootPath, 'output.go');
+        // Check if main.go exists
+        if (!fs.existsSync(mainGoPath)) {
+            vscode.window.showErrorMessage('main.go file not found.');
+            return;
+        }
+        importsAnalyzed.clear();
+        importToAnalyze.length = 0;
         finalCode = '';
-        // Clean the main code and add it to the final code
-        const cleanedMainCode = cleanCode(mainCode);
-        analyzeImports(cleanedMainCode);
-        finalCode += cleanedMainCode;
-        // Analyze the imports in the main code
-        analyzeImports(cleanedMainCode);
-        // Process the imports and generate the final code
-        await processImports();
-        // Append the original main code as a comment
-        finalCode = `// Original main.go:\n// ${mainCode}\n\n` + finalCode;
-        // Generate the package header and import statements
-        const packageHeader = 'package main\n\n';
-        const importStatements = Array.from(importsAnalyzed).join('\n');
-        // Generate the final content
-        const finalContent = packageHeader + importStatements + '\n\n' + finalCode;
-        // Write the final code to output.go in the same folder
-        const outputPath = folderPath + '/output.go';
-        fs.writeFileSync(outputPath, finalContent);
-        vscode.window.showInformationMessage(`Generated output.go at ${outputPath}`);
+        processFile(mainGoPath);
+        // Process importToAnalyze queue
+        while (importToAnalyze.length > 0) {
+            const importPath = importToAnalyze.shift();
+            if (importPath) {
+                const packagePath = path.join('/', importPath);
+                const files = fs.readdirSync(packagePath);
+                for (const file of files) {
+                    const filePath = path.join(packagePath, file);
+                    processFile(filePath);
+                }
+            }
+        }
+        // Create the output file
+        const originalMainGo = fs.readFileSync(mainGoPath, 'utf-8');
+        const outputContent = `// Original main.go:\n/*\n ${originalMainGo}\n*/\n\n\n\n\npackage main\nimport (\n${Array.from(finalImports).join('\n')}\n)\n${finalCode}`;
+        fs.writeFileSync(outputPath, outputContent);
+        vscode.window.showInformationMessage('Aggregation completed successfully.');
     }
-    return;
 }
 function activate(context) {
     console.log('Congratulations, your extension "helloworld-sample" is now active!');

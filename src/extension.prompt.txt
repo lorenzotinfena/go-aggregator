@@ -12,7 +12,7 @@ like is the code in the package imported is in the same package as caller code.
 
 There is a map called "importsAnalyzed" which stores all the imports analyzed.
 There is a queue called "importToAnalyze" that is initialized with all imports from main.go.
-There is a string called "finalCode" which initially store the code from main.go cleaned without package header and import blocks.
+There is a string called "finalCode" which initially store the code from main.go cleaned, and without package header and import blocks.
 
 The script is in a loop until there are elements in importToAnalyze.
 For each import (with alias) from importToAnalyze:
@@ -21,7 +21,7 @@ For each import (with alias) from importToAnalyze:
 add it to importsAnalyzed.
 if it is from a non standard library
 get the list of files from that package (if the package is github.com/a/b/c then the root package path is /github.com/a/b/c and so on other paths), and for each file:
-Append to finalCode the code cleaned without package header and import blocks, and add all its imports to importToAnalyze.
+Append to finalCode the code cleaned, but avoid including the package header and import blocks after cleaned the code, and add all its imports to importToAnalyze.
 }
 
 In the end, append on top of finalCode the a comment with all the original main.go file. And then the package header called "package main" and the list of imports from importsAnalyzed.
@@ -34,3 +34,8 @@ If you need some assumptions on the main.go or on the modulino tell them, but tr
 Implement all necessary functions.
 
 Place all the main code in a unique function called "aggregate" that has to be called from scode.commands.registerCommand callback
+
+
+
+// assunzioni su goji
+non vengono usati '.' per le librerie standard negli imports perché il codice non va se piú imports sono uguali, ma uno ha un '.'
