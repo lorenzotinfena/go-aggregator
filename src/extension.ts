@@ -50,17 +50,16 @@ function cleanAlias(aliases: string[], code: string): string {
   for (let i = 0; i < aliases.length; i++) {
     if (aliases[i][0] !== '.' && aliases[i][0] !== '_' ) {
       const searchString = aliases[i]+'.';
-      while (code.includes(searchString)) {
-        code = code.replace(code, searchString);
-      }
+      code = code.replace(RegExp('(?<![a-zA-Z0-9])'+searchString, "g"), '')
     }
   }
   return code;
 }
 
+
 function processFile(filePath: string) {
   // read filePath and remove comments
-  const fileContent = fs.readFileSync(filePath, 'utf-8').replace(/\/\/.*?\n/g, '').replace(/\/\*.*?\*\//gs, '');
+  const fileContent = fs.readFileSync(filePath, 'utf-8').replace(/\/\/.*?\n/g, '\n').replace(/\/\*.*?\*\//gs, '\n');
   const lines = fileContent.split('\n');
   let packageHeader = '';
   let importBlock = '';
@@ -86,16 +85,14 @@ function processFile(filePath: string) {
 
   var result = getPackagesAndAlias(importBlock);
 
-  // Clean the code by removing aliases
-  const cleanedCode = cleanAlias(result.aliases, code);
 
-  // Append the cleaned code to finalCode
-  finalCode += cleanedCode;
+  var aliasesToRemove: string[] = [];
 
   // Analyze the imports
   for (let i = 0; i < result.packages.length; i++) {
     const pkg = result.packages[i]
     if (pkg.split('/')[0] == 'github.com') {
+      aliasesToRemove.push(result.aliases[i])
       if (!importsAnalyzed.has(pkg)) {
         importsAnalyzed.add(pkg);
         importToAnalyze.push(pkg);
@@ -104,6 +101,12 @@ function processFile(filePath: string) {
       finalImports.add(result.aliases[i] + " \"" + pkg +'"');
     }
   }
+
+  // Clean the code by removing aliases
+  const cleanedCode = cleanAlias(aliasesToRemove, code);
+
+  // Append the cleaned code to finalCode
+  finalCode += cleanedCode;
 }
 
 function aggregate() {
@@ -132,15 +135,17 @@ function aggregate() {
         const packagePath = path.join('/', importPath);
         const files = fs.readdirSync(packagePath);
         for (const file of files) {
-          const filePath = path.join(packagePath, file);
-          processFile(filePath);
+          if (file.endsWith(".go")) {
+            const filePath = path.join(packagePath, file);
+            processFile(filePath);
+          }
         }
       }
     }
 
     // Create the output file
     const originalMainGo = fs.readFileSync(mainGoPath, 'utf-8');
-    const outputContent = `// Original main.go:\n/*\n ${originalMainGo}\n*/\n\n\n\n\npackage main\nimport (\n${Array.from(finalImports).join('\n')}\n)\n${finalCode}`;
+    const outputContent = `// Generated with https://github.com/lorenzotinfena/go-aggregator\n// Original source code:\n/*\n ${originalMainGo}\n*/\n\n\n\n\npackage main\nimport (\n${Array.from(finalImports).join('\n')}\n)\n${finalCode}`;
     fs.writeFileSync(outputPath, outputContent);
 
     vscode.window.showInformationMessage('Aggregation completed successfully.');
