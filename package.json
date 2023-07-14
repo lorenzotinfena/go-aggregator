@@ -14,8 +14,8 @@
   "contributes": {
     "commands": [
       {
-        "command": "go-aggregator.helloWorld",
-        "title": "Hello World"
+        "command": "go-aggregator.aggregate",
+        "title": "Aggregate"
       }
     ]
   },

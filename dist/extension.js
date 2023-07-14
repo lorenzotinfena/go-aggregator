@@ -184,8 +184,7 @@ function aggregate() {
     }
 }
 function activate(context) {
-    console.log('Congratulations, your extension "helloworld-sample" is now active!');
-    const disposable = vscode.commands.registerCommand('go-aggregator.helloWorld', () => {
+    const disposable = vscode.commands.registerCommand('go-aggregator.aggregate', () => {
         aggregate();
     });
     context.subscriptions.push(disposable);

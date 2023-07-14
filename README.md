@@ -1,14 +1,10 @@
 # Go aggregator
 
-This extension is intended to be used with TODO
+This extension is intended to be used with TODO, see that for the usage.
 
 After coding your main.go with third part libraries, this extension let you aggregate all the code in one one file with all the source code self-contained. 
 
 It currently supports only `github.com/lorenzotinfena/goji`.
-
-## Usage
-
-
 
 # Example
 
@@ -96,4 +92,5 @@ func GCD(a, b int) int {
 ```
 
 ## Known Issues
-- all the code (also the imported third part code) shouldn't import standard libraries with the dot '.'
+- all the code (source file + third part libraries) shouldn't import standard libraries with the dot '.'
+- all the names in code (source file + third part libraries) must be different
