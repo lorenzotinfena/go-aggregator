@@ -1,23 +1,48 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
+import * as copy from 'copy-to-clipboard';
 
 const importsAnalyzed: Set<string> = new Set(); // contains only non std libraries
 const importToAnalyze: string[] = []; // contains only non std libraries
 let finalImports = new Set<string>();
 let finalCode = '';
 
+// it preserve line indexes, it will remove also fake comments like the ones in strings, but for out goal, avoiding this isn't necessary
+function removeCommentsAndFixForReadImportBlock(s: string): string {
+  let m = s.match(/\/\*.*?\*\//gs)
+
+while (m !== null) {
+  console.log(m);
+  var c = m[0].match(/\n/gs)?.length!
+  var caporighe=""
+  for(var i=0; i<c; i++) {
+caporighe = caporighe+'\n'
+  }
+  s = s.replace(/\/\*.*?\*\//s, caporighe)
+
+  m = s.match(/\/\*.*?\*\//gs)
+}
+
+s=s.replaceAll(/\/\/.*?\n/, '\n')
+  return s
+}
 
 function getPackagesAndAlias(importBlock: string): { aliases: string[], packages: string[] } {
-  // Regex pattern to parse individual imports
-  const importLinePattern = /(?:[^"'\r\n]+)?["'][^"']*["']/g;
+  importBlock = importBlock.replaceAll("import", '\n')
+  importBlock = importBlock.replaceAll("(", '\n')
+  importBlock = importBlock.replaceAll(")", '\n')
+  importBlock = importBlock.replaceAll(";", '\n')
+
+  // remove empty lines
+  importBlock = importBlock.replace(/(^[ \t]*\n)/gm, "")
 
   // Lists to store aliases and packages
   const aliases: string[] = [];
   const packages: string[] = [];
 
-  let match;
-  while ((match = importLinePattern.exec(importBlock))) {
+  let match = importBlock.split('\n');
+  for (let i = 0; i < match.length; i++) {
     var importLine = match[0].replace(/"/g, ' ').trim().replace(/\s+/g, " ");
 
 var existAlias = true;
@@ -59,29 +84,36 @@ function cleanAlias(aliases: string[], code: string): string {
 
 function processFile(filePath: string) {
   // read filePath and remove comments
-  const fileContent = fs.readFileSync(filePath, 'utf-8').replace(/\/\/.*?\n/g, '\n').replace(/\/\*.*?\*\//gs, '\n');
-  const lines = fileContent.split('\n');
-  let packageHeader = '';
+  const fileContent = fs.readFileSync(filePath, 'utf-8')+'\n';
+  const fileContentWithoutComments = removeCommentsAndFixForReadImportBlock(fileContent)
+  var lines = fileContentWithoutComments.split('\n')
   let importBlock = '';
   let code = '';
 
   // Extract package header, import block, and code
   let isInImportBlock = false;
-  for (const line of lines) {
+  for (let i = 0; i < lines.length; i++) {
+    var line = lines[i].trim()
     if (line.startsWith('package')) {
-      packageHeader = line;
     } else if (line.startsWith('import')) {
       isInImportBlock = true;
       importBlock += line + '\n';
     } else if (isInImportBlock) {
-      if (line.trim() === ')') {
+      if (line === ')') {
         isInImportBlock = false;
       }
       importBlock += line + '\n';
-    } else {
-      code += line + '\n';
+    } else if (line != "") {
+      lines = fileContent.split('\n')
+      for (; i < lines.length; i++) {
+        
+        line = lines[i]
+        code += line + '\n';
+      }
+      break
     }
   }
+
 
   var result = getPackagesAndAlias(importBlock);
 
@@ -110,23 +142,19 @@ function processFile(filePath: string) {
 }
 
 function aggregate() {
-  const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+  const workspaceFolder = vscode.workspace.workspaceFolders?.[0]
   if (workspaceFolder) {
     const rootPath = workspaceFolder.uri.fsPath;
-    const mainGoPath = path.join(rootPath, 'main.go');
-    const outputPath = path.join(rootPath, 'output.go');
+    const mainGoPath = path.join(rootPath, 'main.go')
+    const solutionGoPath = path.join(rootPath, 'solution.go')
 
-    // Check if main.go exists
-    if (!fs.existsSync(mainGoPath)) {
-      vscode.window.showErrorMessage('main.go file not found.');
-      return;
-    }
-
-    importsAnalyzed.clear();
-    importToAnalyze.length = 0;
-    finalCode = '';
+    importsAnalyzed.clear()
+    importToAnalyze.length = 0
+    finalCode = ''
+    finalImports = new Set<string>()
 
     processFile(mainGoPath);
+    processFile(solutionGoPath);
 
     // Process importToAnalyze queue
     while (importToAnalyze.length > 0) {
@@ -144,11 +172,20 @@ function aggregate() {
     }
 
     // Create the output file
-    const originalMainGo = fs.readFileSync(mainGoPath, 'utf-8');
-    const outputContent = `// Generated with https://github.com/lorenzotinfena/go-aggregator\n// Original source code:\n/*\n ${originalMainGo}\n*/\n\n\n\n\npackage main\nimport (\n${Array.from(finalImports).join('\n')}\n)\n${finalCode}`;
-    fs.writeFileSync(outputPath, outputContent);
+    const originalSolutionGo = fs.readFileSync(solutionGoPath, 'utf-8');
+    const outputContent =
+    `// Generated with https://github.com/lorenzotinfena/go-aggregator
+// Original source code:
+/*
+${originalSolutionGo}
+*/
+package main
+import (\n${Array.from(finalImports).join('\n')}
+)
+${finalCode}`
+copy(outputContent);
 
-    vscode.window.showInformationMessage('Aggregation completed successfully.');
+    vscode.window.showInformationMessage('Aggregated!');
   }
 }
 export function activate(context: vscode.ExtensionContext) {
