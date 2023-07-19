@@ -1,7 +1,6 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
-import * as copy from 'copy-to-clipboard';
 
 const importsAnalyzed: Set<string> = new Set(); // contains only non std libraries
 const importToAnalyze: string[] = []; // contains only non std libraries
@@ -10,7 +9,7 @@ let finalCode = '';
 
 // it preserve line indexes, it will remove also fake comments like the ones in strings, but for out goal, avoiding this isn't necessary
 function removeCommentsAndFixForReadImportBlock(s: string): string {
-  let m = s.match(/\/\*.*?\*\//gs)
+  let m = s.match(/\/\*.*?\*\//s)
 
 while (m !== null) {
   console.log(m);
@@ -21,21 +20,21 @@ caporighe = caporighe+'\n'
   }
   s = s.replace(/\/\*.*?\*\//s, caporighe)
 
-  m = s.match(/\/\*.*?\*\//gs)
+  m = s.match(/\/\*.*?\*\//s)
 }
 
-s=s.replaceAll(/\/\/.*?\n/, '\n')
+s=s.replaceAll(/\/\/.*?\n/gs, '\n')
   return s
 }
 
 function getPackagesAndAlias(importBlock: string): { aliases: string[], packages: string[] } {
-  importBlock = importBlock.replaceAll("import", '\n')
-  importBlock = importBlock.replaceAll("(", '\n')
-  importBlock = importBlock.replaceAll(")", '\n')
-  importBlock = importBlock.replaceAll(";", '\n')
+  importBlock = importBlock.replaceAll(/import/g, '\n')
+  importBlock = importBlock.replaceAll(/\(/g, '\n')
+  importBlock = importBlock.replaceAll(/\)/g, '\n')
+  importBlock = importBlock.replaceAll(/;/g, '\n')
 
   // remove empty lines
-  importBlock = importBlock.replace(/(^[ \t]*\n)/gm, "")
+  importBlock = importBlock.replaceAll(/^\s*[\r\n]/gm, "")
 
   // Lists to store aliases and packages
   const aliases: string[] = [];
@@ -43,7 +42,10 @@ function getPackagesAndAlias(importBlock: string): { aliases: string[], packages
 
   let match = importBlock.split('\n');
   for (let i = 0; i < match.length; i++) {
-    var importLine = match[0].replace(/"/g, ' ').trim().replace(/\s+/g, " ");
+    if (match[i] == "") {
+      continue
+    }
+    var importLine = match[i].replaceAll(/"/g, ' ').trim().replaceAll(/\t/g, " ").replaceAll(/\s+/g, " ")
 
 var existAlias = true;
     if (importLine.charAt(0) === '.' || importLine.charAt(0) === '_' ) {
@@ -180,17 +182,18 @@ function aggregate() {
 ${originalSolutionGo}
 */
 package main
-import (\n${Array.from(finalImports).join('\n')}
+import (
+${Array.from(finalImports).join('\n')}
 )
 ${finalCode}`
-copy(outputContent);
+vscode.env.clipboard.writeText(outputContent)
 
-    vscode.window.showInformationMessage('Aggregated!');
+    vscode.window.showInformationMessage('Done!');
   }
 }
 export function activate(context: vscode.ExtensionContext) {
   
-	const disposable = vscode.commands.registerCommand('go-aggregator.aggregate', () => {
+	const disposable = vscode.commands.registerCommand('go-aggregator.aggregate-and-copy', () => {
 		aggregate();
 	});
 
