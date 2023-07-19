@@ -167,7 +167,7 @@ function aggregate() {
   const workspaceFolder = vscode.workspace.workspaceFolders?.[0]
   if (workspaceFolder) {
     const rootPath = workspaceFolder.uri.fsPath;
-    const mainGoPath = path.join(rootPath, 'main.go')
+    const utilsGoPath = path.join(rootPath, 'utils.go')
     const solutionGoPath = path.join(rootPath, 'solution.go')
 
     importsAnalyzed.clear()
@@ -175,7 +175,7 @@ function aggregate() {
     finalCode = ''
     finalImports = new Set<string>()
 
-    processFile(mainGoPath);
+    processFile(utilsGoPath);
     processFile(solutionGoPath);
 
     // Process importToAnalyze queue
