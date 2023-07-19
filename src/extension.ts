@@ -149,12 +149,12 @@ function processFile(filePath: string) {
 //  - a prefix of a folder namer which is followed by a '@' and then arbitrary symbols
 function fixPath(path: string): string {
   const folders = path.split('/').filter(Boolean);
-  let fixeddPath = folders[0];
+  let fixeddPath = '/' + folders[0] + '/';
   for (let i = 1; i < folders.length; i++) {
     const updatedFolder = fs.readdirSync(fixeddPath, { withFileTypes: true })
       .find((entry) => entry.isDirectory() && entry.name.startsWith(folders[i] + '@'));
     if (updatedFolder) {
-      fixeddPath = updatedFolder + '/';
+      fixeddPath += updatedFolder.name + '/';
     } else {
       fixeddPath += folders[i] + '/';
     }
@@ -182,7 +182,7 @@ function aggregate() {
     while (importToAnalyze.length > 0) {
       const importPath = importToAnalyze.shift();
       if (importPath) {
-        const packagePath = fixPath(path.join('$GOPATH', importPath));
+        const packagePath = fixPath(path.join('/go/pkg/mod', importPath));
         const files = fs.readdirSync(packagePath);
         for (const file of files) {
           if (file.endsWith(".go")) {
