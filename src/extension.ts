@@ -185,7 +185,7 @@ function aggregate() {
         const packagePath = fixPath(path.join('/go/pkg/mod', importPath));
         const files = fs.readdirSync(packagePath);
         for (const file of files) {
-          if (file.endsWith(".go")) {
+          if (file.endsWith(".go") && !file.endsWith("_test.go")) {
             const filePath = path.join(packagePath, file);
             processFile(filePath);
           }
