@@ -196,7 +196,8 @@ function aggregate() {
     // Create the output file
     const originalSolutionGo = fs.readFileSync(solutionGoPath, 'utf-8');
     const outputContent =
-    `// Generated with https://github.com/lorenzotinfena/go-aggregator
+`// Template: https://github.com/lorenzotinfena/competitive-go
+// Generated with: https://github.com/lorenzotinfena/go-aggregator
 // Original source code:
 /*
 ${originalSolutionGo}
