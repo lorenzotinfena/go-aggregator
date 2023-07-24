@@ -76,8 +76,7 @@ var existAlias = true;
 function cleanAlias(aliases: string[], code: string): string {
   for (let i = 0; i < aliases.length; i++) {
     if (aliases[i][0] !== '.' && aliases[i][0] !== '_' ) {
-      const searchString = aliases[i]+'.';
-      code = code.replace(RegExp('(?<![a-zA-Z0-9])'+searchString, "g"), '')
+      code = code.replace(RegExp('((?<!^[\p{Zs}\t]*//.*)(?<!/\*(?:(?!\*/)[\s\S\r])*?)(?<![a-zA-Z0-9])'+aliases[i]+'\.', "g"), '')
     }
   }
   return code;
