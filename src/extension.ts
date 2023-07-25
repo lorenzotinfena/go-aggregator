@@ -180,23 +180,11 @@ function aggregate() {
     processFile(utilsGoPath);
     processFile(solutionGoPath);
 
-    // Get go modules cache path root
-    var goModPathRoot: string = ""
-    const cp = require('child_process')
-cp.exec('pwd', (err: string, stdout: string, stderr: string) => {
-  goModPathRoot = stdout
-    console.log('stdout: ' + stdout);
-    console.log('stderr: ' + stderr);
-    if (err) {
-        console.log('error: ' + err);
-    }
-});
-
     // Process importToAnalyze queue
     while (importToAnalyze.length > 0) {
       const importPath = importToAnalyze.shift();
       if (importPath) {
-        const packagePath = fixPath(path.join(goModPathRoot, importPath));
+        const packagePath = fixPath(path.join('/go/pkg/mod', importPath));
         const files = fs.readdirSync(packagePath);
         for (const file of files) {
           if (file.endsWith(".go") && !file.endsWith("_test.go")) {
