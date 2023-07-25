@@ -74,9 +74,10 @@ var existAlias = true;
 
 
 function cleanAlias(aliases: string[], code: string): string {
+  
   for (let i = 0; i < aliases.length; i++) {
     if (aliases[i][0] !== '.' && aliases[i][0] !== '_' ) {
-      code = code.replace(RegExp('((?<!^[\p{Zs}\t]*//.*)(?<!/\*(?:(?!\*/)[\s\S\r])*?)(?<![a-zA-Z0-9])'+aliases[i]+'\.', "g"), '')
+      code = code.replace(RegExp('(?<![a-zA-Z0-9])'+aliases[i]+'\.', "g"), '')
     }
   }
   return code;
@@ -166,7 +167,7 @@ function aggregate() {
   const workspaceFolder = vscode.workspace.workspaceFolders?.[0]
   if (workspaceFolder) {
     const rootPath = workspaceFolder.uri.fsPath;
-    const utilsGoPath = path.join(rootPath, 'utils.go')
+    const mainGoPath = path.join(rootPath, 'main.go')
     const solutionGoPath = path.join(rootPath, 'solution.go')
 
     importsAnalyzed.clear()
@@ -174,7 +175,7 @@ function aggregate() {
     finalCode = ''
     finalImports = new Set<string>()
 
-    processFile(utilsGoPath);
+    processFile(mainGoPath);
     processFile(solutionGoPath);
 
     // Process importToAnalyze queue
@@ -184,7 +185,7 @@ function aggregate() {
         const packagePath = fixPath(path.join('/go/pkg/mod', importPath));
         const files = fs.readdirSync(packagePath);
         for (const file of files) {
-          if (file.endsWith(".go") && !file.endsWith("_test.go")) {
+          if (file.endsWith(".go")) {
             const filePath = path.join(packagePath, file);
             processFile(filePath);
           }
@@ -195,8 +196,7 @@ function aggregate() {
     // Create the output file
     const originalSolutionGo = fs.readFileSync(solutionGoPath, 'utf-8');
     const outputContent =
-`// Template: https://github.com/lorenzotinfena/competitive-go
-// Generated with: https://github.com/lorenzotinfena/go-aggregator
+    `// Generated with https://github.com/lorenzotinfena/go-aggregator
 // Original source code:
 /*
 ${originalSolutionGo}
