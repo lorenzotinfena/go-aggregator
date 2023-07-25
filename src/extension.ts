@@ -98,7 +98,9 @@ function processFile(filePath: string) {
     var line = lines[i].trim()
     if (line.startsWith('package')) {
     } else if (line.startsWith('import')) {
-      isInImportBlock = true;
+      if (!line.startsWith('import "')) {
+        isInImportBlock = true;
+      }
       importBlock += line + '\n';
     } else if (isInImportBlock) {
       if (line === ')') {
@@ -125,7 +127,7 @@ function processFile(filePath: string) {
   // Analyze the imports
   for (let i = 0; i < result.packages.length; i++) {
     const pkg = result.packages[i]
-    if (pkg.split('/')[0] == 'github.com') {
+    if (pkg.split('/')[0].includes('.')) {
       aliasesToRemove.push(result.aliases[i])
       if (!importsAnalyzed.has(pkg)) {
         importsAnalyzed.add(pkg);
