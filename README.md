@@ -1,11 +1,7 @@
 # vscode extension
 # Go aggregator
 
-This extension is intended to be used with TODO, see that for the usage.
-
-After coding your main.go with third part libraries, this extension let you aggregate all the code in one one file with all the source code self-contained. 
-
-It currently supports only `github.com/lorenzotinfena/goji`.
+This extension is intended to be used only by https://github.com/lorenzotinfena/competitive-go, see that for documentation and usage.
 
 # Example
 
@@ -91,11 +87,3 @@ func GCD(a, b int) int {
 	}
 }
 ```
-
-## Known Issues
-Note: for all the code I mean source file + third part libraries
-in all the code:
-	- all the code must be formatted with gofmt
-	- strings cannot contain aliases of non standard libraries
-	- all the code shouldn't import standard libraries with the dot '.'
-	- all the names in all the code must be different
