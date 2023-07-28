@@ -200,10 +200,11 @@ function aggregate() {
     const outputContent =
     `// Template: https://github.com/lorenzotinfena/competitive-go
 // Generated with: https://github.com/lorenzotinfena/go-aggregator
-// Original source code:
+// Original code:
 /*
 ${originalSolutionGo}
 */
+// Generated code:
 package main
 import (
 ${Array.from(finalImports).join('\n')}
