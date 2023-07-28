@@ -116,13 +116,12 @@ function getPackagesAndAlias(importBlock) {
 function cleanAlias(aliases, code) {
     for (let i = 0; i < aliases.length; i++) {
         if (aliases[i][0] !== '.' && aliases[i][0] !== '_') {
-            const searchString = aliases[i] + '.';
-            code = code.replace(RegExp('(?<![a-zA-Z0-9])' + searchString, "g"), '');
+            code = code.replace(RegExp('(?<![a-zA-Z0-9])' + aliases[i] + '\.', "g"), '');
         }
     }
     return code;
 }
-function processFile(filePath) {
+function processFile(filePath, importPath) {
     // read filePath and remove comments
     const fileContent = fs.readFileSync(filePath, 'utf-8') + '\n';
     const fileContentWithoutComments = removeCommentsAndFixForReadImportBlock(fileContent);
@@ -136,7 +135,9 @@ function processFile(filePath) {
         if (line.startsWith('package')) {
         }
         else if (line.startsWith('import')) {
-            isInImportBlock = true;
+            if (!line.startsWith('import "')) {
+                isInImportBlock = true;
+            }
             importBlock += line + '\n';
         }
         else if (isInImportBlock) {
@@ -146,6 +147,14 @@ function processFile(filePath) {
             importBlock += line + '\n';
         }
         else if (line != "") {
+            // add header as comments
+            code += '//------------------------------------------\n';
+            code += '//------------------------------------------\n';
+            code += '// File from package: ' + importPath + '\n//\n';
+            for (let j = 0; j < i; i++) {
+                line = lines[j];
+                code += '// ' + line + '\n';
+            }
             lines = fileContent.split('\n');
             for (; i < lines.length; i++) {
                 line = lines[i];
@@ -159,7 +168,7 @@ function processFile(filePath) {
     // Analyze the imports
     for (let i = 0; i < result.packages.length; i++) {
         const pkg = result.packages[i];
-        if (pkg.split('/')[0] == 'github.com') {
+        if (pkg.split('/')[0].includes('.')) {
             aliasesToRemove.push(result.aliases[i]);
             if (!importsAnalyzed.has(pkg)) {
                 importsAnalyzed.add(pkg);
@@ -198,14 +207,14 @@ function aggregate() {
     const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
     if (workspaceFolder) {
         const rootPath = workspaceFolder.uri.fsPath;
-        const mainGoPath = path.join(rootPath, 'main.go');
+        const utilsGoPath = path.join(rootPath, 'utils.go');
         const solutionGoPath = path.join(rootPath, 'solution.go');
         importsAnalyzed.clear();
         importToAnalyze.length = 0;
         finalCode = '';
         finalImports = new Set();
-        processFile(mainGoPath);
-        processFile(solutionGoPath);
+        processFile(utilsGoPath, 'main');
+        processFile(solutionGoPath, 'main');
         // Process importToAnalyze queue
         while (importToAnalyze.length > 0) {
             const importPath = importToAnalyze.shift();
@@ -213,20 +222,22 @@ function aggregate() {
                 const packagePath = fixPath(path.join('/go/pkg/mod', importPath));
                 const files = fs.readdirSync(packagePath);
                 for (const file of files) {
-                    if (file.endsWith(".go")) {
+                    if (file.endsWith(".go") && !file.endsWith("_test.go")) {
                         const filePath = path.join(packagePath, file);
-                        processFile(filePath);
+                        processFile(filePath, importPath);
                     }
                 }
             }
         }
         // Create the output file
         const originalSolutionGo = fs.readFileSync(solutionGoPath, 'utf-8');
-        const outputContent = `// Generated with https://github.com/lorenzotinfena/go-aggregator
-// Original source code:
+        const outputContent = `// Template: https://github.com/lorenzotinfena/competitive-go
+// Generated with: https://github.com/lorenzotinfena/go-aggregator
+// Original code:
 /*
 ${originalSolutionGo}
 */
+// Generated code:
 package main
 import (
 ${Array.from(finalImports).join('\n')}

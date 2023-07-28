@@ -84,7 +84,7 @@ function cleanAlias(aliases: string[], code: string): string {
 }
 
 
-function processFile(filePath: string) {
+function processFile(filePath: string, importPath: string) {
   // read filePath and remove comments
   const fileContent = fs.readFileSync(filePath, 'utf-8')+'\n';
   const fileContentWithoutComments = removeCommentsAndFixForReadImportBlock(fileContent)
@@ -108,9 +108,16 @@ function processFile(filePath: string) {
       }
       importBlock += line + '\n';
     } else if (line != "") {
+      // add header as comments
+      code += '//------------------------------------------\n';
+      code += '//------------------------------------------\n';
+      code += '// File from package: ' + importPath + '\n//\n';
+      for (let j = 0; j < i; i++) {
+        line = lines[j]
+        code += '// ' + line + '\n';
+      }
       lines = fileContent.split('\n')
       for (; i < lines.length; i++) {
-        
         line = lines[i]
         code += line + '\n';
       }
@@ -177,8 +184,8 @@ function aggregate() {
     finalCode = ''
     finalImports = new Set<string>()
 
-    processFile(utilsGoPath);
-    processFile(solutionGoPath);
+    processFile(utilsGoPath, 'main');
+    processFile(solutionGoPath, 'main');
 
     // Process importToAnalyze queue
     while (importToAnalyze.length > 0) {
@@ -189,7 +196,7 @@ function aggregate() {
         for (const file of files) {
           if (file.endsWith(".go") && !file.endsWith("_test.go")) {
             const filePath = path.join(packagePath, file);
-            processFile(filePath);
+            processFile(filePath, importPath);
           }
         }
       }
