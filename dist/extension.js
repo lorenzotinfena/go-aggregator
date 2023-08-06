@@ -149,9 +149,8 @@ function processFile(filePath, importPath) {
         else if (line != "") {
             // add header as comments
             code += '//------------------------------------------\n';
-            code += '//------------------------------------------\n';
             code += '// File from package: ' + importPath + '\n//\n';
-            for (let j = 0; j < i; i++) {
+            for (let j = 0; j < i; j++) {
                 line = lines[j];
                 code += '// ' + line + '\n';
             }
