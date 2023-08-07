@@ -236,6 +236,8 @@ function aggregate() {
 /*
 ${originalSolutionGo}
 */
+//------------------------------------------
+//------------------------------------------
 // Generated code:
 package main
 import (
