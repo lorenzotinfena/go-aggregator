@@ -148,13 +148,13 @@ function processFile(filePath, importPath) {
         }
         else if (line != "") {
             // add header as comments
-            code += '//------------------------------------------\n';
+            code += '//--------------------------------------------------------------------------\n';
             code += '// File from package: ' + importPath + '\n//\n';
+            lines = fileContent.split('\n');
             for (let j = 0; j < i; j++) {
                 line = lines[j];
                 code += '// ' + line + '\n';
             }
-            lines = fileContent.split('\n');
             for (; i < lines.length; i++) {
                 line = lines[i];
                 code += line + '\n';
@@ -236,8 +236,8 @@ function aggregate() {
 /*
 ${originalSolutionGo}
 */
-//------------------------------------------
-//------------------------------------------
+//--------------------------------------------------------------------------
+//--------------------------------------------------------------------------
 // Generated code:
 package main
 import (
