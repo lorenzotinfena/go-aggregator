@@ -224,7 +224,9 @@ vscode.env.clipboard.writeText(outputContent)
 export function activate(context: vscode.ExtensionContext) {
   
 	const disposable = vscode.commands.registerCommand('go-aggregator.aggregate-and-copy', () => {
-		aggregate();
+		vscode.env.clipboard.writeText("error")
+    vscode.env.clipboard.writeText("😀")
+    aggregate();
 	});
 
 	context.subscriptions.push(disposable);

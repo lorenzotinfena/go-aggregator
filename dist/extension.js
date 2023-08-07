@@ -248,6 +248,8 @@ ${finalCode}`;
 }
 function activate(context) {
     const disposable = vscode.commands.registerCommand('go-aggregator.aggregate-and-copy', () => {
+        vscode.env.clipboard.writeText("error");
+        vscode.env.clipboard.writeText("😀");
         aggregate();
     });
     context.subscriptions.push(disposable);
