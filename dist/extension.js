@@ -208,12 +208,14 @@ function aggregate() {
         const rootPath = workspaceFolder.uri.fsPath;
         const utilsGoPath = path.join(rootPath, 'utils.go');
         const solutionGoPath = path.join(rootPath, 'solution.go');
+        const notdebugGoPath = path.join(rootPath, 'notdebug.go');
         importsAnalyzed.clear();
         importToAnalyze.length = 0;
         finalCode = '';
         finalImports = new Set();
         processFile(utilsGoPath, 'main');
         processFile(solutionGoPath, 'main');
+        processFile(notdebugGoPath, 'main');
         // Process importToAnalyze queue
         while (importToAnalyze.length > 0) {
             const importPath = importToAnalyze.shift();
