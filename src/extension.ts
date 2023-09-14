@@ -160,6 +160,7 @@ function fixPath(path: string): string {
   let fixeddPath = '/' + folders[0] + '/';
   for (let i = 1; i < folders.length; i++) {
     const updatedFolder = fs.readdirSync(fixeddPath, { withFileTypes: true })
+      .sort((a: fs.Dirent, b:fs.Dirent) => b.name.localeCompare(a.name)) // this prevent taking older versions
       .find((entry) => entry.isDirectory() && entry.name.startsWith(folders[i] + '@'));
     if (updatedFolder) {
       fixeddPath += updatedFolder.name + '/';
