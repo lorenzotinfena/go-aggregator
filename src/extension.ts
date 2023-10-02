@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
+import { exit } from 'process';
 
 const importsAnalyzed: Set<string> = new Set(); // contains only non std libraries
 const importToAnalyze: string[] = []; // contains only non std libraries
@@ -192,7 +193,10 @@ function aggregate() {
     // Process importToAnalyze queue
     while (importToAnalyze.length > 0) {
       const importPath = importToAnalyze.shift();
-      if (importPath) {
+      if (importPath && !importPath.startsWith("github.com/lorenzotinfena/goji/")) {
+        exit(1);
+      }
+      if (importPath && importPath.startsWith("github.com/lorenzotinfena/goji/")) {
         const packagePath = fixPath(path.join('/go/pkg/mod', importPath));
         const files = fs.readdirSync(packagePath);
         for (const file of files) {

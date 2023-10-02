@@ -19,6 +19,12 @@ module.exports = require("path");
 
 module.exports = require("fs");
 
+/***/ }),
+/* 4 */
+/***/ ((module) => {
+
+module.exports = require("process");
+
 /***/ })
 /******/ 	]);
 /************************************************************************/
@@ -57,6 +63,7 @@ exports.activate = void 0;
 const vscode = __webpack_require__(1);
 const path = __webpack_require__(2);
 const fs = __webpack_require__(3);
+const process_1 = __webpack_require__(4);
 const importsAnalyzed = new Set(); // contains only non std libraries
 const importToAnalyze = []; // contains only non std libraries
 let finalImports = new Set();
@@ -192,6 +199,7 @@ function fixPath(path) {
     let fixeddPath = '/' + folders[0] + '/';
     for (let i = 1; i < folders.length; i++) {
         const updatedFolder = fs.readdirSync(fixeddPath, { withFileTypes: true })
+            .sort((a, b) => b.name.localeCompare(a.name)) // this prevent taking older versions
             .find((entry) => entry.isDirectory() && entry.name.startsWith(folders[i] + '@'));
         if (updatedFolder) {
             fixeddPath += updatedFolder.name + '/';
@@ -219,7 +227,10 @@ function aggregate() {
         // Process importToAnalyze queue
         while (importToAnalyze.length > 0) {
             const importPath = importToAnalyze.shift();
-            if (importPath) {
+            if (importPath && !importPath.startsWith("github.com/lorenzotinfena/goji/")) {
+                (0, process_1.exit)(1);
+            }
+            if (importPath && importPath.startsWith("github.com/lorenzotinfena/goji/")) {
                 const packagePath = fixPath(path.join('/go/pkg/mod', importPath));
                 const files = fs.readdirSync(packagePath);
                 for (const file of files) {
