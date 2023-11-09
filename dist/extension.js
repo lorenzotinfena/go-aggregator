@@ -128,7 +128,7 @@ function cleanAlias(aliases, code) {
     }
     return code;
 }
-function processFile(filePath, importPath) {
+function processFile(filePath, importPath, website) {
     // read filePath and remove comments
     const fileContent = fs.readFileSync(filePath, 'utf-8') + '\n';
     const fileContentWithoutComments = removeCommentsAndFixForReadImportBlock(fileContent);
@@ -186,7 +186,10 @@ function processFile(filePath, importPath) {
         }
     }
     // Clean the code by removing aliases
-    const cleanedCode = cleanAlias(aliasesToRemove, code);
+    var cleanedCode = cleanAlias(aliasesToRemove, code);
+    if (importPath == "main" && website == "leetcode") {
+        cleanedCode = cleanedCode.replace("func main(", "func _main(");
+    }
     // Append the cleaned code to finalCode
     finalCode += cleanedCode;
 }
@@ -217,17 +220,13 @@ function aggregate(website) {
         const utilsGoPath = path.join(rootPath, 'utils.go');
         const solutionGoPath = path.join(rootPath, 'solution.go');
         var notdebugGoPath = path.join(rootPath, 'notdebug.go');
-        if (website == "leetcode") {
-            notdebugGoPath = notdebugGoPath.replace("func main(", "func _main(");
-            notdebugGoPath = "";
-        }
         importsAnalyzed.clear();
         importToAnalyze.length = 0;
         finalCode = '';
         finalImports = new Set();
-        processFile(utilsGoPath, 'main');
-        processFile(solutionGoPath, 'main');
-        processFile(notdebugGoPath, 'main');
+        processFile(utilsGoPath, 'main', website);
+        processFile(solutionGoPath, 'main', website);
+        processFile(notdebugGoPath, 'main', website);
         // Process importToAnalyze queue
         while (importToAnalyze.length > 0) {
             const importPath = importToAnalyze.shift();
@@ -240,7 +239,7 @@ function aggregate(website) {
                 for (const file of files) {
                     if (file.endsWith(".go") && !file.endsWith("_test.go")) {
                         const filePath = path.join(packagePath, file);
-                        processFile(filePath, importPath);
+                        processFile(filePath, importPath, website);
                     }
                 }
             }

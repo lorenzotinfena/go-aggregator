@@ -85,7 +85,7 @@ function cleanAlias(aliases: string[], code: string): string {
 }
 
 
-function processFile(filePath: string, importPath: string) {
+function processFile(filePath: string, importPath: string, website: string) {
   // read filePath and remove comments
   const fileContent = fs.readFileSync(filePath, 'utf-8')+'\n';
   const fileContentWithoutComments = removeCommentsAndFixForReadImportBlock(fileContent)
@@ -146,7 +146,12 @@ function processFile(filePath: string, importPath: string) {
   }
 
   // Clean the code by removing aliases
-  const cleanedCode = cleanAlias(aliasesToRemove, code);
+  var cleanedCode = cleanAlias(aliasesToRemove, code);
+
+
+  if (importPath == "main" && website == "leetcode") {
+    cleanedCode = cleanedCode.replace("func main(", "func _main(")
+  }
 
   // Append the cleaned code to finalCode
   finalCode += cleanedCode;
@@ -181,20 +186,14 @@ function aggregate(website: string) {
     const solutionGoPath = path.join(rootPath, 'solution.go')
     var notdebugGoPath = path.join(rootPath, 'notdebug.go')
 
-    if (website == "leetcode") {
-      notdebugGoPath = notdebugGoPath.replace("func main(", "func _main(")
-      notdebugGoPath = ""
-    }
-
-
     importsAnalyzed.clear()
     importToAnalyze.length = 0
     finalCode = ''
     finalImports = new Set<string>()
 
-    processFile(utilsGoPath, 'main');
-    processFile(solutionGoPath, 'main');
-    processFile(notdebugGoPath, 'main');
+    processFile(utilsGoPath, 'main', website);
+    processFile(solutionGoPath, 'main', website);
+    processFile(notdebugGoPath, 'main', website);
 
     // Process importToAnalyze queue
     while (importToAnalyze.length > 0) {
@@ -208,7 +207,7 @@ function aggregate(website: string) {
         for (const file of files) {
           if (file.endsWith(".go") && !file.endsWith("_test.go")) {
             const filePath = path.join(packagePath, file);
-            processFile(filePath, importPath);
+            processFile(filePath, importPath, website);
           }
         }
       }
