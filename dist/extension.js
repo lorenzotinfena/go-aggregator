@@ -210,13 +210,16 @@ function fixPath(path) {
     }
     return fixeddPath;
 }
-function aggregate() {
+function aggregate(website) {
     const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
     if (workspaceFolder) {
         const rootPath = workspaceFolder.uri.fsPath;
         const utilsGoPath = path.join(rootPath, 'utils.go');
         const solutionGoPath = path.join(rootPath, 'solution.go');
-        const notdebugGoPath = path.join(rootPath, 'notdebug.go');
+        var notdebugGoPath = path.join(rootPath, 'notdebug.go');
+        if (website == "leetcode") {
+            notdebugGoPath = notdebugGoPath.replace(/func main/g, "func _main");
+        }
         importsAnalyzed.clear();
         importToAnalyze.length = 0;
         finalCode = '';
@@ -243,6 +246,10 @@ function aggregate() {
         }
         // Create the output file
         const originalSolutionGo = fs.readFileSync(solutionGoPath, 'utf-8');
+        var packagemain = "";
+        if (website == "codeforces") {
+            packagemain = "package main";
+        }
         const outputContent = `// Template: https://github.com/lorenzotinfena/competitive-go
 // Generated with: https://github.com/lorenzotinfena/go-aggregator
 // Original code:
@@ -252,7 +259,7 @@ ${originalSolutionGo}
 //--------------------------------------------------------------------------
 //--------------------------------------------------------------------------
 // Generated code:
-package main
+//${packagemain}
 import (
 ${Array.from(finalImports).join('\n')}
 )
@@ -262,12 +269,18 @@ ${finalCode}`;
     }
 }
 function activate(context) {
-    const disposable = vscode.commands.registerCommand('go-aggregator.aggregate-and-copy', () => {
+    const disposable = vscode.commands.registerCommand('go-aggregator.aggregate-and-copy-codeforces', () => {
         vscode.env.clipboard.writeText("error");
         vscode.env.clipboard.writeText("😀");
-        aggregate();
+        aggregate("codeforces");
+    });
+    const disposable2 = vscode.commands.registerCommand('go-aggregator.aggregate-and-copy-leetcode', () => {
+        vscode.env.clipboard.writeText("error");
+        vscode.env.clipboard.writeText("😀");
+        aggregate("leetcode");
     });
     context.subscriptions.push(disposable);
+    context.subscriptions.push(disposable2);
 }
 exports.activate = activate;
 

@@ -3,7 +3,7 @@
   "publisher": "lorenzotinfena",
   "displayName": "Go aggregator",
   "description": "",
-  "version": "0.1.13",
+  "version": "0.1.14",
   "engines": {
     "vscode": "^1.80.0"
   },
@@ -15,8 +15,12 @@
   "contributes": {
     "commands": [
       {
-        "command": "go-aggregator.aggregate-and-copy",
-        "title": "Aggregate and copy"
+        "command": "go-aggregator.aggregate-and-copy-codeforces",
+        "title": "Aggregate and copy for Codeforces"
+      },
+      {
+        "command": "go-aggregator.aggregate-and-copy-leetcode",
+        "title": "Aggregate and copy for LeetCode"
       }
     ]
   },
