@@ -215,9 +215,9 @@ function aggregate(website: string) {
 
     // Create the output file
     const originalSolutionGo = fs.readFileSync(solutionGoPath, 'utf-8');
-    var packagemain = ""
-    if (website == "codeforces") {
-      packagemain = "package main"
+    var packagemain = "package main"
+    if (website == "leetcode") {
+      packagemain = "//package main"
     }
     const outputContent =
     `// Template: https://github.com/lorenzotinfena/competitive-go
@@ -229,7 +229,7 @@ ${originalSolutionGo}
 //--------------------------------------------------------------------------
 //--------------------------------------------------------------------------
 // Generated code:
-//${packagemain}
+${packagemain}
 import (
 ${Array.from(finalImports).join('\n')}
 )
