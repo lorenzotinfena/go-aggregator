@@ -218,7 +218,8 @@ function aggregate(website) {
         const solutionGoPath = path.join(rootPath, 'solution.go');
         var notdebugGoPath = path.join(rootPath, 'notdebug.go');
         if (website == "leetcode") {
-            notdebugGoPath = notdebugGoPath.replace(/func main/g, "func _main");
+            notdebugGoPath = notdebugGoPath.replace("func main(", "func _main(");
+            notdebugGoPath = "";
         }
         importsAnalyzed.clear();
         importToAnalyze.length = 0;

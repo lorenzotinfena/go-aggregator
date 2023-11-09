@@ -182,7 +182,8 @@ function aggregate(website: string) {
     var notdebugGoPath = path.join(rootPath, 'notdebug.go')
 
     if (website == "leetcode") {
-      notdebugGoPath = notdebugGoPath.replace(/func main/g, "func _main")
+      notdebugGoPath = notdebugGoPath.replace("func main(", "func _main(")
+      notdebugGoPath = ""
     }
 
 
