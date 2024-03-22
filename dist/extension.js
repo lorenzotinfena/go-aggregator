@@ -281,42 +281,47 @@ async function removeDeadCode(code) {
     var lines = new Array();
     return new Promise(async (ok, no) => {
         await process.exec('deadcode ' + path, (err, stdout, stderr) => {
-            if (err) {
-                console.log('error');
-            }
-            var splitted = stdout.split('\n');
-            for (var i in splitted) {
-                var splitt = splitted[i];
-                if (splitt.length > 0 && splitt.startsWith(path)) {
-                    var num = (+splitt.split(':')[1]) - 1;
-                    lines.push(num);
+            try {
+                if (err) {
+                    console.log('error');
                 }
-            }
-            var splitted = code.split('\n');
-            var j = 0;
-            var ranges_to_remove = Array();
-            for (let i = 0; i < splitted.length; i++) {
-                if (j < lines.length && i == lines[j]) {
-                    var start = lines[j]; // ATTENTION! This could be improved removing also the comment of the function
-                    var end = lines[j];
-                    while (splitted[end] != "}") {
-                        end++;
+                var splitted = stdout.split('\n');
+                for (var i in splitted) {
+                    var splitt = splitted[i];
+                    if (splitt.length > 0 && splitt.startsWith(path)) {
+                        var num = (+splitt.split(':')[1]) - 1;
+                        lines.push(num);
                     }
-                    ranges_to_remove.push([start, end]);
-                    j++;
+                }
+                var splitted = code.split('\n');
+                var j = 0;
+                var ranges_to_remove = Array();
+                for (let i = 0; i < splitted.length; i++) {
+                    if (j < lines.length && i == lines[j]) {
+                        var start = lines[j]; // ATTENTION! This could be improved removing also the comment of the function
+                        var end = lines[j];
+                        while (splitted[end] != "}") {
+                            end++;
+                        }
+                        ranges_to_remove.push([start, end]);
+                        j++;
+                    }
+                }
+                var result = "";
+                var j = 0;
+                for (let i = 0; i < splitted.length; i++) {
+                    if (j < ranges_to_remove.length && i == ranges_to_remove[j][0]) {
+                        result += '//' + splitted[i] + '\n//  ...\n//}\n';
+                        i = ranges_to_remove[j][1] + 1;
+                        j++;
+                    }
+                    if (i < splitted.length) {
+                        result += splitted[i] + '\n';
+                    }
                 }
             }
-            var result = "";
-            var j = 0;
-            for (let i = 0; i < splitted.length; i++) {
-                if (j < ranges_to_remove.length && i == ranges_to_remove[j][0]) {
-                    result += '//' + splitted[i] + '\n//  ...\n//}\n';
-                    i = ranges_to_remove[j][1] + 1;
-                    j++;
-                }
-                if (i < splitted.length) {
-                    result += splitted[i] + '\n';
-                }
+            finally {
+                fs.unlinkSync(path);
             }
             ok(result);
         });
