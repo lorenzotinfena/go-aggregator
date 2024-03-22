@@ -25,6 +25,12 @@ module.exports = require("fs");
 
 module.exports = require("process");
 
+/***/ }),
+/* 5 */
+/***/ ((module) => {
+
+module.exports = require("child_process");
+
 /***/ })
 /******/ 	]);
 /************************************************************************/
@@ -68,7 +74,7 @@ const importsAnalyzed = new Set(); // contains only non std libraries
 const importToAnalyze = []; // contains only non std libraries
 let finalImports = new Set();
 let finalCode = '';
-// it preserve line indexes, it will remove also fake comments like the ones in strings, but for out goal, avoiding this isn't necessary
+// it preserve line indexes, it will remove also fake comments like the ones in strings, but for our goal, avoiding this isn't necessary
 function removeCommentsAndFixForReadImportBlock(s) {
     let m = s.match(/\/\*.*?\*\//s);
     while (m !== null) {
@@ -264,20 +270,74 @@ import (
 ${Array.from(finalImports).join('\n')}
 )
 ${finalCode}`;
-        vscode.env.clipboard.writeText(outputContent);
-        vscode.window.showInformationMessage('Done!');
+        return outputContent;
     }
+    throw new Error();
+}
+async function removeDeadCode(code) {
+    const process = __webpack_require__(5);
+    var path = vscode.workspace.workspaceFolders?.map(folder => folder.uri.path)[0] + '/codewithdeadcode.go';
+    fs.writeFileSync(path, code);
+    var lines = new Array();
+    return new Promise(async (ok, no) => {
+        await process.exec('deadcode ' + path, (err, stdout, stderr) => {
+            if (err) {
+                console.log('error');
+            }
+            var splitted = stdout.split('\n');
+            for (var i in splitted) {
+                var splitt = splitted[i];
+                if (splitt.length > 0 && splitt.startsWith(path)) {
+                    var num = (+splitt.split(':')[1]) - 1;
+                    lines.push(num);
+                }
+            }
+            var splitted = code.split('\n');
+            var j = 0;
+            var ranges_to_remove = Array();
+            for (let i = 0; i < splitted.length; i++) {
+                if (j < lines.length && i == lines[j]) {
+                    var start = lines[j]; // ATTENTION! This could be improved removing also the comment of the function
+                    var end = lines[j];
+                    while (splitted[end] != "}") {
+                        end++;
+                    }
+                    ranges_to_remove.push([start, end]);
+                    j++;
+                }
+            }
+            var result = "";
+            var j = 0;
+            for (let i = 0; i < splitted.length; i++) {
+                if (j < ranges_to_remove.length && i == ranges_to_remove[j][0]) {
+                    result += '//' + splitted[i] + '\n//  ...\n//}\n';
+                    i = ranges_to_remove[j][1] + 1;
+                    j++;
+                }
+                if (i < splitted.length) {
+                    result += splitted[i] + '\n';
+                }
+            }
+            ok(result);
+        });
+    });
 }
 function activate(context) {
-    const disposable = vscode.commands.registerCommand('go-aggregator.aggregate-and-copy-codeforces', () => {
+    const disposable = vscode.commands.registerCommand('go-aggregator.aggregate-and-copy-codeforces', async () => {
         vscode.env.clipboard.writeText("error");
         vscode.env.clipboard.writeText("😀");
-        aggregate("codeforces");
+        removeDeadCode(aggregate("codeforces")).then((result) => {
+            vscode.env.clipboard.writeText(result);
+            vscode.window.showInformationMessage('Done!');
+        });
     });
-    const disposable2 = vscode.commands.registerCommand('go-aggregator.aggregate-and-copy-leetcode', () => {
+    const disposable2 = vscode.commands.registerCommand('go-aggregator.aggregate-and-copy-leetcode', async () => {
         vscode.env.clipboard.writeText("error");
         vscode.env.clipboard.writeText("😀");
-        aggregate("leetcode");
+        removeDeadCode(aggregate("leetcode")).then((result) => {
+            vscode.env.clipboard.writeText(result);
+            vscode.window.showInformationMessage('Done!');
+        });
     });
     context.subscriptions.push(disposable);
     context.subscriptions.push(disposable2);
