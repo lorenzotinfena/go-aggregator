@@ -259,6 +259,7 @@ async function removeDeadCode(code: string): Promise<string> {
 export function activate(context: vscode.ExtensionContext) {
 
   const disposable = vscode.commands.registerCommand('go-aggregator.aggregate-and-copy-codeforces', async () => {
+    vscode.window.showInformationMessage('Testtttttttttttt');
     vscode.env.clipboard.writeText("error")
     vscode.env.clipboard.writeText("😀")
     removeDeadCode(aggregate("codeforces")).then((result: string) => {
