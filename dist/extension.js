@@ -280,6 +280,8 @@ async function removeDeadCode(code) {
     fs.writeFileSync(path, code);
     return new Promise(async (ok, no) => {
         await process.exec('go run ' + vscode.workspace.workspaceFolders?.map(folder => folder.uri.path)[0] + '/.devcontainer/. ' + path, (err, stdout, stderr) => {
+            vscode.window.showErrorMessage(err.message);
+            vscode.window.showErrorMessage(stderr);
             var result = "😀";
             try {
                 result = fs.readFileSync(path).toString();
@@ -293,7 +295,6 @@ async function removeDeadCode(code) {
 }
 function activate(context) {
     const disposable = vscode.commands.registerCommand('go-aggregator.aggregate-and-copy-codeforces', async () => {
-        vscode.window.showInformationMessage('Testtttttttttttt');
         vscode.env.clipboard.writeText("error");
         vscode.env.clipboard.writeText("😀");
         removeDeadCode(aggregate("codeforces")).then((result) => {
