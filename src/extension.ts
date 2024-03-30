@@ -245,7 +245,7 @@ async function removeDeadCode(code: string): Promise<string> {
   fs.writeFileSync(path, code);
 
   return new Promise(async (ok, no) => {
-    await process.exec('go run ' + vscode.workspace.workspaceFolders?.map(folder => folder.uri.path)[0] + '/.devcontainer/removedeadcode/. ' + path, (err: Error, stdout: string, stderr: string) => {
+    await process.exec('cd ' + vscode.workspace.workspaceFolders?.map(folder => folder.uri.path)[0] + '/.devcontainer/removedeadcode && go run . ' + path, (err: Error, stdout: string, stderr: string) => {
       if (err) {
         vscode.window.showErrorMessage(err.message);
       }
