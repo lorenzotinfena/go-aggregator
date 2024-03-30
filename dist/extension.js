@@ -280,8 +280,9 @@ async function removeDeadCode(code) {
     fs.writeFileSync(path, code);
     return new Promise(async (ok, no) => {
         await process.exec('go run ' + vscode.workspace.workspaceFolders?.map(folder => folder.uri.path)[0] + '/.devcontainer/. ' + path, (err, stdout, stderr) => {
+            var result = "😀";
             try {
-                var result = fs.readFileSync(path).toString();
+                result = fs.readFileSync(path).toString();
             }
             finally {
                 fs.unlinkSync(path);
