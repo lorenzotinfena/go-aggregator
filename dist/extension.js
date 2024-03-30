@@ -279,12 +279,18 @@ async function removeDeadCode(code) {
     var path = '/workspaces/tmpcode.go';
     fs.writeFileSync(path, code);
     return new Promise(async (ok, no) => {
-        await process.exec('go run ' + vscode.workspace.workspaceFolders?.map(folder => folder.uri.path)[0] + '/.devcontainer/. ' + path, (err, stdout, stderr) => {
-            vscode.window.showErrorMessage(err.message);
-            vscode.window.showErrorMessage(stderr);
+        await process.exec('go run ' + vscode.workspace.workspaceFolders?.map(folder => folder.uri.path)[0] + '/.devcontainer/removedeadcode/. ' + path, (err, stdout, stderr) => {
+            if (err) {
+                vscode.window.showErrorMessage(err.message);
+            }
+            if (stderr) {
+                vscode.window.showErrorMessage(stderr);
+            }
             var result = "😀";
             try {
-                result = fs.readFileSync(path).toString();
+                if (!err && !stderr) {
+                    result = fs.readFileSync(path).toString();
+                }
             }
             finally {
                 fs.unlinkSync(path);
@@ -298,16 +304,20 @@ function activate(context) {
         vscode.env.clipboard.writeText("error");
         vscode.env.clipboard.writeText("😀");
         removeDeadCode(aggregate("codeforces")).then((result) => {
-            vscode.env.clipboard.writeText(result);
-            vscode.window.showInformationMessage('Done!');
+            if (result != "😀") {
+                vscode.env.clipboard.writeText(result);
+                vscode.window.showInformationMessage('Done!');
+            }
         });
     });
     const disposable2 = vscode.commands.registerCommand('go-aggregator.aggregate-and-copy-leetcode', async () => {
         vscode.env.clipboard.writeText("error");
         vscode.env.clipboard.writeText("😀");
         removeDeadCode(aggregate("leetcode")).then((result) => {
-            vscode.env.clipboard.writeText(result);
-            vscode.window.showInformationMessage('Done!');
+            if (result != "😀") {
+                vscode.env.clipboard.writeText(result);
+                vscode.window.showInformationMessage('Done!');
+            }
         });
     });
     context.subscriptions.push(disposable);

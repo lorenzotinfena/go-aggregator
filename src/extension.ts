@@ -245,12 +245,19 @@ async function removeDeadCode(code: string): Promise<string> {
   fs.writeFileSync(path, code);
 
   return new Promise(async (ok, no) => {
-    await process.exec('go run ' + vscode.workspace.workspaceFolders?.map(folder => folder.uri.path)[0] + '/.devcontainer/. ' + path, (err: Error, stdout: string, stderr: string) => {
-      vscode.window.showErrorMessage(err.message);
-      vscode.window.showErrorMessage(stderr);
+    await process.exec('go run ' + vscode.workspace.workspaceFolders?.map(folder => folder.uri.path)[0] + '/.devcontainer/removedeadcode/. ' + path, (err: Error, stdout: string, stderr: string) => {
+      if (err) {
+        vscode.window.showErrorMessage(err.message);
+      }
+      if (stderr) {
+        vscode.window.showErrorMessage(stderr);
+      }
       var result = "😀"
+
       try {
-        result = fs.readFileSync(path).toString();
+        if (!err && !stderr) {
+          result = fs.readFileSync(path).toString();
+        }
       } finally {
         fs.unlinkSync(path)
       }
@@ -259,21 +266,24 @@ async function removeDeadCode(code: string): Promise<string> {
   });
 }
 export function activate(context: vscode.ExtensionContext) {
-
   const disposable = vscode.commands.registerCommand('go-aggregator.aggregate-and-copy-codeforces', async () => {
     vscode.env.clipboard.writeText("error")
     vscode.env.clipboard.writeText("😀")
     removeDeadCode(aggregate("codeforces")).then((result: string) => {
-      vscode.env.clipboard.writeText(result)
-      vscode.window.showInformationMessage('Done!');
+      if (result != "😀") {
+        vscode.env.clipboard.writeText(result)
+        vscode.window.showInformationMessage('Done!');
+      }
     });
   });
   const disposable2 = vscode.commands.registerCommand('go-aggregator.aggregate-and-copy-leetcode', async () => {
     vscode.env.clipboard.writeText("error")
     vscode.env.clipboard.writeText("😀")
     removeDeadCode(aggregate("leetcode")).then((result: string) => {
-      vscode.env.clipboard.writeText(result)
-      vscode.window.showInformationMessage('Done!');
+      if (result != "😀") {
+        vscode.env.clipboard.writeText(result)
+        vscode.window.showInformationMessage('Done!');
+      }
     });
   });
 
