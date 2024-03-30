@@ -12,19 +12,19 @@ let finalCode = '';
 function removeCommentsAndFixForReadImportBlock(s: string): string {
   let m = s.match(/\/\*.*?\*\//s)
 
-while (m !== null) {
-  console.log(m);
-  var c = m[0].match(/\n/gs)?.length!
-  var caporighe=""
-  for(var i=0; i<c; i++) {
-caporighe = caporighe+'\n'
+  while (m !== null) {
+    console.log(m);
+    var c = m[0].match(/\n/gs)?.length!
+    var caporighe = ""
+    for (var i = 0; i < c; i++) {
+      caporighe = caporighe + '\n'
+    }
+    s = s.replace(/\/\*.*?\*\//s, caporighe)
+
+    m = s.match(/\/\*.*?\*\//s)
   }
-  s = s.replace(/\/\*.*?\*\//s, caporighe)
 
-  m = s.match(/\/\*.*?\*\//s)
-}
-
-s=s.replaceAll(/\/\/.*?\n/gs, '\n')
+  s = s.replaceAll(/\/\/.*?\n/gs, '\n')
   return s
 }
 
@@ -48,26 +48,26 @@ function getPackagesAndAlias(importBlock: string): { aliases: string[], packages
     }
     var importLine = match[i].replaceAll(/"/g, ' ').trim().replaceAll(/\t/g, " ").replaceAll(/\s+/g, " ")
 
-var existAlias = true;
-    if (importLine.charAt(0) === '.' || importLine.charAt(0) === '_' ) {
+    var existAlias = true;
+    if (importLine.charAt(0) === '.' || importLine.charAt(0) === '_') {
       importLine = importLine.substring(1);
       existAlias = false;
     }
 
-    importLine=importLine.trim();
+    importLine = importLine.trim();
     var splitted = importLine.split(' ')
-    var pack = splitted[splitted.length-1]
+    var pack = splitted[splitted.length - 1]
 
-     packages.push(pack);
-     if(existAlias ){
+    packages.push(pack);
+    if (existAlias) {
 
-    var tmp = splitted[0].split('/')
-    var alias = tmp[tmp.length-1]
-    aliases.push(alias);
-     } else {
+      var tmp = splitted[0].split('/')
+      var alias = tmp[tmp.length - 1]
+      aliases.push(alias);
+    } else {
       aliases.push(importLine.charAt(0));
-     }
-    
+    }
+
   }
 
   return { aliases, packages };
@@ -75,10 +75,10 @@ var existAlias = true;
 
 
 function cleanAlias(aliases: string[], code: string): string {
-  
+
   for (let i = 0; i < aliases.length; i++) {
-    if (aliases[i][0] !== '.' && aliases[i][0] !== '_' ) {
-      code = code.replace(RegExp('(?<![a-zA-Z0-9])'+aliases[i]+'\.', "g"), '')
+    if (aliases[i][0] !== '.' && aliases[i][0] !== '_') {
+      code = code.replace(RegExp('(?<![a-zA-Z0-9])' + aliases[i] + '\.', "g"), '')
     }
   }
   return code;
@@ -87,7 +87,7 @@ function cleanAlias(aliases: string[], code: string): string {
 
 function processFile(filePath: string, importPath: string, website: string) {
   // read filePath and remove comments
-  const fileContent = fs.readFileSync(filePath, 'utf-8')+'\n';
+  const fileContent = fs.readFileSync(filePath, 'utf-8') + '\n';
   const fileContentWithoutComments = removeCommentsAndFixForReadImportBlock(fileContent)
   var lines = fileContentWithoutComments.split('\n')
   let importBlock = '';
@@ -141,7 +141,7 @@ function processFile(filePath: string, importPath: string, website: string) {
         importToAnalyze.push(pkg);
       }
     } else {
-      finalImports.add(result.aliases[i] + " \"" + pkg +'"');
+      finalImports.add(result.aliases[i] + " \"" + pkg + '"');
     }
   }
 
@@ -166,7 +166,7 @@ function fixPath(path: string): string {
   let fixeddPath = '/' + folders[0] + '/';
   for (let i = 1; i < folders.length; i++) {
     const updatedFolder = fs.readdirSync(fixeddPath, { withFileTypes: true })
-      .sort((a: fs.Dirent, b:fs.Dirent) => b.name.localeCompare(a.name)) // this prevent taking older versions
+      .sort((a: fs.Dirent, b: fs.Dirent) => b.name.localeCompare(a.name)) // this prevent taking older versions
       .find((entry) => entry.isDirectory() && entry.name.startsWith(folders[i] + '@'));
     if (updatedFolder) {
       fixeddPath += updatedFolder.name + '/';
@@ -220,7 +220,7 @@ function aggregate(website: string): string {
       packagemain = "//package main"
     }
     const outputContent =
-    `// Template: https://github.com/lorenzotinfena/competitive-go
+      `// Template: https://github.com/lorenzotinfena/competitive-go
 // Generated with: https://github.com/lorenzotinfena/go-aggregator
 // Original code:
 /*
@@ -234,90 +234,46 @@ import (
 ${Array.from(finalImports).join('\n')}
 )
 ${finalCode}`
-return outputContent
+    return outputContent
   }
   throw new Error();
 }
 
 async function removeDeadCode(code: string): Promise<string> {
-  
   const process = require('child_process')
-  var path = vscode.workspace.workspaceFolders?.map(folder =>folder.uri.path)[0] + '/codewithdeadcode.go';
+  var path = '/workspaces/tmpcode.go'
   fs.writeFileSync(path, code);
-  var lines = new Array();
 
-  return new Promise(async (ok, no)=> {
-
-  
-   await process.exec('deadcode ' + path, (err: Error, stdout:string, stderr:string) => {
-    try {
-
-      if (err) {
-        console.log('error');
+  return new Promise(async (ok, no) => {
+    await process.exec('go run ' + vscode.workspace.workspaceFolders?.map(folder => folder.uri.path)[0] + '/.devcontainer/. ' + path, (err: Error, stdout: string, stderr: string) => {
+      try {
+        var result = fs.readFileSync(path).toString();
+      } finally {
+        fs.unlinkSync(path)
       }
-      var splitted=stdout.split('\n')
-      for (var i in splitted) {
-        var splitt = splitted[i];
-        if (splitt.length > 0 && splitt.startsWith(path)) {
-          var num: number = (+splitt.split(':')[1])-1
-          lines.push(num)
-        }
-      }
-      var splitted = code.split('\n')
-      var j = 0;
-      var ranges_to_remove = Array();
-      for (let i = 0; i < splitted.length; i++) {
-        if (j < lines.length && i==lines[j]) {
-          var start = lines[j]; // ATTENTION! This could be improved removing also the comment of the function
-          var end = lines[j];
-          while (splitted[end] != "}") {
-            end++;
-          }
-          ranges_to_remove.push([start, end])
-          j++;
-        }
-      }
-      var result = "";
-      var j = 0;
-      for (let i = 0; i < splitted.length; i++) {
-        if (j < ranges_to_remove.length && i == ranges_to_remove[j][0]) {
-          result += '//' + splitted[i] + '\n//  ...\n//}\n';
-          i=ranges_to_remove[j][1]+1;
-          j++;
-        }
-        if (i < splitted.length) {
-          result += splitted[i] + '\n';
-        }
-      }
-      
-      
-    } finally {
-      fs.unlinkSync(path)
-    } 
       ok(result);
-      
-});
-});
+    });
+  });
 }
 export function activate(context: vscode.ExtensionContext) {
-  
-	const disposable = vscode.commands.registerCommand('go-aggregator.aggregate-and-copy-codeforces', async () => {
+
+  const disposable = vscode.commands.registerCommand('go-aggregator.aggregate-and-copy-codeforces', async () => {
     vscode.env.clipboard.writeText("error")
     vscode.env.clipboard.writeText("😀")
     removeDeadCode(aggregate("codeforces")).then((result: string) => {
       vscode.env.clipboard.writeText(result)
       vscode.window.showInformationMessage('Done!');
     });
-	});
+  });
   const disposable2 = vscode.commands.registerCommand('go-aggregator.aggregate-and-copy-leetcode', async () => {
-		vscode.env.clipboard.writeText("error")
+    vscode.env.clipboard.writeText("error")
     vscode.env.clipboard.writeText("😀")
     removeDeadCode(aggregate("leetcode")).then((result: string) => {
       vscode.env.clipboard.writeText(result)
       vscode.window.showInformationMessage('Done!');
     });
-	});
+  });
 
-	context.subscriptions.push(disposable);
+  context.subscriptions.push(disposable);
   context.subscriptions.push(disposable2);
 }

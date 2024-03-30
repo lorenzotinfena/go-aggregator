@@ -276,49 +276,12 @@ ${finalCode}`;
 }
 async function removeDeadCode(code) {
     const process = __webpack_require__(5);
-    var path = vscode.workspace.workspaceFolders?.map(folder => folder.uri.path)[0] + '/codewithdeadcode.go';
+    var path = '/workspaces/tmpcode.go';
     fs.writeFileSync(path, code);
-    var lines = new Array();
     return new Promise(async (ok, no) => {
-        await process.exec('deadcode ' + path, (err, stdout, stderr) => {
+        await process.exec('go run ' + vscode.workspace.workspaceFolders?.map(folder => folder.uri.path)[0] + '/.devcontainer/. ' + path, (err, stdout, stderr) => {
             try {
-                if (err) {
-                    console.log('error');
-                }
-                var splitted = stdout.split('\n');
-                for (var i in splitted) {
-                    var splitt = splitted[i];
-                    if (splitt.length > 0 && splitt.startsWith(path)) {
-                        var num = (+splitt.split(':')[1]) - 1;
-                        lines.push(num);
-                    }
-                }
-                var splitted = code.split('\n');
-                var j = 0;
-                var ranges_to_remove = Array();
-                for (let i = 0; i < splitted.length; i++) {
-                    if (j < lines.length && i == lines[j]) {
-                        var start = lines[j]; // ATTENTION! This could be improved removing also the comment of the function
-                        var end = lines[j];
-                        while (splitted[end] != "}") {
-                            end++;
-                        }
-                        ranges_to_remove.push([start, end]);
-                        j++;
-                    }
-                }
-                var result = "";
-                var j = 0;
-                for (let i = 0; i < splitted.length; i++) {
-                    if (j < ranges_to_remove.length && i == ranges_to_remove[j][0]) {
-                        result += '//' + splitted[i] + '\n//  ...\n//}\n';
-                        i = ranges_to_remove[j][1] + 1;
-                        j++;
-                    }
-                    if (i < splitted.length) {
-                        result += splitted[i] + '\n';
-                    }
-                }
+                var result = fs.readFileSync(path).toString();
             }
             finally {
                 fs.unlinkSync(path);
