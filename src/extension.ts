@@ -221,7 +221,7 @@ ${originalSolutionGo}
 //--------------------------------------------------------------------------
 //--------------------------------------------------------------------------
 // Generated code:
-package main
+package main // ignore this comment
 import (
 ${Array.from(finalImports).join('\n')}
 )
@@ -250,8 +250,8 @@ async function removeDeadCode(code: string, website: string): Promise<string> {
         if (!err && !stderr) {
           result = fs.readFileSync(path).toString();
           if (website == "leetcode") {
-            result = result.replace("\nfunc main(", "\nfunc _main(")
-            result = result.replace("\npackage main", "\n//package main")
+            result = result.replaceAll("\nfunc main(", "\nfunc _main(")
+            result = result.replace("\npackage main // ignore this comment", "\n//package main // ignore this comment")
           }
         }
       } finally {
@@ -263,8 +263,8 @@ async function removeDeadCode(code: string, website: string): Promise<string> {
 }
 export function activate(context: vscode.ExtensionContext) {
   const disposable = vscode.commands.registerCommand('go-aggregator.aggregate-and-copy-codeforces', async () => {
-    vscode.env.clipboard.writeText("error")
-    vscode.env.clipboard.writeText("😀")
+    vscode.env.clipboard.writeText("error");
+    vscode.env.clipboard.writeText("😀");
     removeDeadCode(aggregate(), "codeforces").then((result: string) => {
       if (result != "😀") {
         vscode.env.clipboard.writeText(result)

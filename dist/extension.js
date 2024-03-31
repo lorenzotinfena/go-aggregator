@@ -258,7 +258,7 @@ ${originalSolutionGo}
 //--------------------------------------------------------------------------
 //--------------------------------------------------------------------------
 // Generated code:
-package main
+package main // ignore this comment
 import (
 ${Array.from(finalImports).join('\n')}
 )
@@ -284,8 +284,8 @@ async function removeDeadCode(code, website) {
                 if (!err && !stderr) {
                     result = fs.readFileSync(path).toString();
                     if (website == "leetcode") {
-                        result = result.replace("\nfunc main(", "\nfunc _main(");
-                        result = result.replace("\npackage main", "\n//package main");
+                        result = result.replaceAll("\nfunc main(", "\nfunc _main(");
+                        result = result.replace("\npackage main // ignore this comment", "\n//package main // ignore this comment");
                     }
                 }
             }
