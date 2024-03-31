@@ -85,7 +85,7 @@ function cleanAlias(aliases: string[], code: string): string {
 }
 
 
-function processFile(filePath: string, importPath: string, website: string) {
+function processFile(filePath: string, importPath: string) {
   // read filePath and remove comments
   const fileContent = fs.readFileSync(filePath, 'utf-8') + '\n';
   const fileContentWithoutComments = removeCommentsAndFixForReadImportBlock(fileContent)
@@ -148,11 +148,6 @@ function processFile(filePath: string, importPath: string, website: string) {
   // Clean the code by removing aliases
   var cleanedCode = cleanAlias(aliasesToRemove, code);
 
-
-  if (importPath == "main" && website == "leetcode") {
-    cleanedCode = cleanedCode.replace("func main(", "func _main(")
-  }
-
   // Append the cleaned code to finalCode
   finalCode += cleanedCode;
 }
@@ -178,7 +173,7 @@ function fixPath(path: string): string {
   return fixeddPath;
 }
 
-function aggregate(website: string): string {
+function aggregate(): string {
   const workspaceFolder = vscode.workspace.workspaceFolders?.[0]
   if (workspaceFolder) {
     const rootPath = workspaceFolder.uri.fsPath;
@@ -191,9 +186,9 @@ function aggregate(website: string): string {
     finalCode = ''
     finalImports = new Set<string>()
 
-    processFile(utilsGoPath, 'main', website);
-    processFile(solutionGoPath, 'main', website);
-    processFile(notdebugGoPath, 'main', website);
+    processFile(utilsGoPath, 'main');
+    processFile(solutionGoPath, 'main');
+    processFile(notdebugGoPath, 'main');
 
     // Process importToAnalyze queue
     while (importToAnalyze.length > 0) {
@@ -207,7 +202,7 @@ function aggregate(website: string): string {
         for (const file of files) {
           if (file.endsWith(".go") && !file.endsWith("_test.go")) {
             const filePath = path.join(packagePath, file);
-            processFile(filePath, importPath, website);
+            processFile(filePath, importPath);
           }
         }
       }
@@ -215,10 +210,7 @@ function aggregate(website: string): string {
 
     // Create the output file
     const originalSolutionGo = fs.readFileSync(solutionGoPath, 'utf-8');
-    var packagemain = "package main"
-    if (website == "leetcode") {
-      packagemain = "//package main"
-    }
+
     const outputContent =
       `// Template: https://github.com/lorenzotinfena/competitive-go
 // Generated with: https://github.com/lorenzotinfena/go-aggregator
@@ -229,7 +221,7 @@ ${originalSolutionGo}
 //--------------------------------------------------------------------------
 //--------------------------------------------------------------------------
 // Generated code:
-${packagemain}
+package main
 import (
 ${Array.from(finalImports).join('\n')}
 )
@@ -239,7 +231,7 @@ ${finalCode}`
   throw new Error();
 }
 
-async function removeDeadCode(code: string): Promise<string> {
+async function removeDeadCode(code: string, website: string): Promise<string> {
   const process = require('child_process')
   var path = '/workspaces/tmpcode.go'
   fs.writeFileSync(path, code);
@@ -257,6 +249,10 @@ async function removeDeadCode(code: string): Promise<string> {
       try {
         if (!err && !stderr) {
           result = fs.readFileSync(path).toString();
+          if (website == "leetcode") {
+            result = result.replace("\nfunc main(", "\nfunc _main(")
+            result = result.replace("\npackage main", "\n//package main")
+          }
         }
       } finally {
         fs.unlinkSync(path)
@@ -269,7 +265,7 @@ export function activate(context: vscode.ExtensionContext) {
   const disposable = vscode.commands.registerCommand('go-aggregator.aggregate-and-copy-codeforces', async () => {
     vscode.env.clipboard.writeText("error")
     vscode.env.clipboard.writeText("😀")
-    removeDeadCode(aggregate("codeforces")).then((result: string) => {
+    removeDeadCode(aggregate(), "codeforces").then((result: string) => {
       if (result != "😀") {
         vscode.env.clipboard.writeText(result)
         vscode.window.showInformationMessage('Done!');
@@ -279,7 +275,7 @@ export function activate(context: vscode.ExtensionContext) {
   const disposable2 = vscode.commands.registerCommand('go-aggregator.aggregate-and-copy-leetcode', async () => {
     vscode.env.clipboard.writeText("error")
     vscode.env.clipboard.writeText("😀")
-    removeDeadCode(aggregate("leetcode")).then((result: string) => {
+    removeDeadCode(aggregate(), "leetcode").then((result: string) => {
       if (result != "😀") {
         vscode.env.clipboard.writeText(result)
         vscode.window.showInformationMessage('Done!');

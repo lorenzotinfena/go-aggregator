@@ -3,7 +3,7 @@
   "publisher": "lorenzotinfena",
   "displayName": "Go aggregator",
   "description": "",
-  "version": "0.2.7",
+  "version": "0.2.8",
   "engines": {
     "vscode": "^1.80.0"
   },
